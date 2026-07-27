@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+
+model Birth {
+  id              String            @id @default(cuid())
+  actNumber       String            @unique
+  childFirstname  String
+  childLastname   String
+  birthDate       DateTime
+  birthPlace      String
+  sex             String
+  status          String
+  centerId        String
+  createdBy       String
+  createdAt       DateTime          @default(now())
+
+  // Relations Prisma vers les tables enfants
+  parents         BirthParent[]
+  attachments     BirthAttachment[]
+  histories       BirthHistory[]
+}
+
+model BirthParent {
+  id         String  @id @default(cuid())
+  birthId    String
+  fatherName String
+  motherName String
+  fatherJob  String?
+  motherJob  String?
+
+  // Liaison de la clé étrangère birthId à l'id de la table Birth
+  birth      Birth   @relation(fields: [birthId], references: [id], onDelete: Cascade)
+
+  // Index requis par MySQL pour optimiser les recherches sur les relations
+  @@index([birthId])
+}
+
+model BirthAttachment {
+  id         String   @id @default(cuid())
+  birthId    String
+  fileName   String
+  filePath   String
+  uploadedAt DateTime @default(now())
+
+  birth      Birth    @relation(fields: [birthId], references: [id], onDelete: Cascade)
+
+  @@index([birthId])
+}
+
+model BirthHistory {
+  id        String   @id @default(cuid())
+  birthId   String
+  action    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  birth     Birth    @relation(fields: [birthId], references: [id], onDelete: Cascade)
+
+  @@index([birthId])
+}
+
+//GESTION DES UTILISATEUR
+model User {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  username  String   @unique
+  password  String
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  // Relation avec le Centre
+  centerId  String
+  center    Center   @relation(fields: [centerId], references: [id])
+
+  // Relation avec le Rôle
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique // C'est ici que vous stockerez "ADMIN", "AGENT", etc.
+  description String?
+  users       User[]
+}
+
+model Center {
+  id   String @id @default(cuid())
+  name String @unique // Ex: "Centre de Yaoundé 5", "Centre de Bafoussam"
+  type String // Ex: "PRINCIPAL", "SECONDAIRE"
+  users User[]
+}
