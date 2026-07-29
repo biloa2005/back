@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 //VERIFICATION DU TOKEN
-export const verifyJwt=(res,req,next)=>{
-    const authHeader=req.headers.authorization || req.headers.Authorization;
+export const verifyJwt=(req,res,next)=>{
+    const authHeader=req.headers?.authorization || req.headers?.Authorization;
 if(!authHeader?.startsWith('Bearer ')){
     return res.status(401).json({success:false,message:"Acces refuse. Token manquant."})
 }
