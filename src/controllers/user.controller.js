@@ -2,7 +2,7 @@ import prisma from "../config/prisma.js"; // Extension .js indispensable en Node
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 
-export const loginUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   const { username, password } = req.body;
   const ipAddress = req.ip || req.headers["x-forwarded-for"] || "127.0.0.1";
   const browser = req.headers["user-agent"] || "Unknown";
