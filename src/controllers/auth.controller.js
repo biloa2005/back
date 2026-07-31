@@ -166,3 +166,38 @@ return res.status(200).json({
 }
 
 }
+/**
+ * REFRESH TOKEN
+ */
+export const refreshAccessToken=async(req,res)=>{
+  const {refreshToken}=req.body;
+  if(!refreshToken){
+    return res.status(400).json({success:false,message:"refresh token requis"})
+  }
+  try{
+    const decoded=jwt.verify(refreshToken,process.env.JWT_REFRESH_SECRET)
+    const tokenInDb=await prisma.refreshToken.findFirst({
+      where:{token:refreshToken,userId:decoded.id},
+      include:{user:{include:{role:true}}}
+    });
+    if(!tokenInDb){
+      return res.status(403).json({success:false,
+        message:"refresh token ionvalide ou non trouver"
+      })
+    }
+    //generation d'un nouvel acess token (valide)
+    const newAccessToken=jwt.sign({
+      id:tokenInDb.user.id,username:tokenInDb.user.username,
+      role:tokenInDb.user.role.name
+    },
+  process.env.JWT_SECRET,
+  {expiresIn:"15m"})
+  //renvoyons le nouveau token au client
+  return res.status(200).json({
+    suceess:true,
+    token:newAccessToken
+  })
+  }catch(error){
+    return res.status(403).json({ success: false, message: "Session expirée, veuillez vous reconnecter.", error: error.message });
+  }
+}
