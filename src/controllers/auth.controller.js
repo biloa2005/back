@@ -77,6 +77,13 @@ export const loginUser = async (req, res) => {
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       }
     });
+    //configuration du cookie securise
+    res.cookie('refreshToken',refreshToken,{
+      httpOnly:true,
+      secure:process.env.NODE_ENV==="production",
+      sameSite:"strict",
+      maxAge:7*24*60*60*1000
+    })
 
     // 8. NETTOYAGE ASYNCHRONE DES VIEUX TOKENS EXPIRÉS
     prisma.refreshToken.deleteMany({
@@ -88,7 +95,7 @@ export const loginUser = async (req, res) => {
       success: true,
       message: "Connexion réussie",
       token,
-      refreshToken: refreshToken,
+      // refreshToken: refreshToken,
       user: {
         id: user.id,
         name: `${user.firstName} ${user.lastName}`,
@@ -110,7 +117,7 @@ export const changePassword =async (req,res)=>{
   const{oldPassword,newPassword,confirmPassword}=req.body;
   const userId=req.user?.id;
   if(!oldPassword||!newPassword||!confirmPassword){
-return res.statut(400).json({
+return res.status(400).json({
   success:false,
   message:"Veuillez remplir tous les champs: Ancien mot de passe,nouveau et confirmation"
 });
@@ -139,7 +146,7 @@ try{
   //verifion l'ancien mot de passe
   const isPasswordValid=await argon2.verify(user.password,oldPassword)
   if (!isPasswordValid){
-    return res.statut(401).json({success:false,message:"l'ancien mot de passe est incorrect"})
+    return res.status(401).json({success:false,message:"l'ancien mot de passe est incorrect"})
 
   }
   //chiffrons le nouveau mot de passe valide
@@ -170,7 +177,7 @@ return res.status(200).json({
  * REFRESH TOKEN
  */
 export const refreshAccessToken=async(req,res)=>{
-  const {refreshToken}=req.body;
+  const refreshToken=req.cookies.refreshToken;
   if(!refreshToken){
     return res.status(400).json({success:false,message:"refresh token requis"})
   }
@@ -194,10 +201,28 @@ export const refreshAccessToken=async(req,res)=>{
   {expiresIn:"15m"})
   //renvoyons le nouveau token au client
   return res.status(200).json({
-    suceess:true,
+    success:true,
     token:newAccessToken
   })
   }catch(error){
     return res.status(403).json({ success: false, message: "Session expirée, veuillez vous reconnecter.", error: error.message });
   }
 }
+//LOG out
+export const logoutUser = async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+
+  if (refreshToken) {
+    // Supprimer de la BDD
+    await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
+  }
+
+  // Effacer le cookie du navigateur
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  });
+
+  return res.status(200).json({ success: true, message: "Déconnexion réussie." });
+};
