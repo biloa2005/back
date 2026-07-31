@@ -100,3 +100,69 @@ export const loginUser = async (req, res) => {
     return res.status(500).json({ success: false, message: "Erreur lors de la connexion.", error: error.message });
   }
 };
+/**
+ * changePassword - Permet à un utilisateur authentifié de changer son mot de passe.
+ * @param {} req 
+ * @param {*} res 
+ * @returns 
+ */
+export const changePassword =async (req,res)=>{
+  const{oldPassword,newPassword,confirmPassword}=req.body;
+  const userId=req.user?.id;
+  if(!oldPassword||!newPassword||!confirmPassword){
+return res.statut(400).json({
+  success:false,
+  message:"Veuillez remplir tous les champs: Ancien mot de passe,nouveau et confirmation"
+});
+  }
+    // VÉRIFICATION DE LA CORRESPONDANCE DU NOUVEAU MOT DE PASSE
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: "Le nouveau mot de passe et la confirmation ne correspondent pas."
+    });
+  }
+  //VERIFIONS QUE LE MOT DE PASSE ENTRER NE CORRESPOND PAS A LANCIEN
+if(oldPassword===newPassword){
+  return res.status(400).json({
+    success:false,
+    message:"le nouveau mot de passe doit etres different de l'ancien"
+  });
+}
+try{
+  const user=await prisma.user.findUnique({
+    where:{id:userId}
+  });
+  if(!user){
+    return res.status(404).json({success:false,message:"utilisateur non trouver"})
+  }
+  //verifion l'ancien mot de passe
+  const isPasswordValid=await argon2.verify(user.password,oldPassword)
+  if (!isPasswordValid){
+    return res.statut(401).json({success:false,message:"l'ancien mot de passe est incorrect"})
+
+  }
+  //chiffrons le nouveau mot de passe valide
+  const hashedNewPassword=await argon2.hash(newPassword);
+  //enregistrons la modification dans la BD
+  await prisma.user.update({
+    where:{id:userId},
+    data:{password:hashedNewPassword}
+  });
+  //Deconnexion globale en revoquant les refresh tokens existants
+await prisma.refreshToken.deleteMany({
+  where:{userId:userId}
+});
+return res.status(200).json({
+  success:true,
+  message:"Mot de passe modifier avec success veuiller vous reconnecter"
+})
+}catch(error){
+  return res.status(500).json({
+    success:false,
+    message:"Erreur lors du changement de mot de passe"
+    ,error:error.message
+  })
+}
+
+}
