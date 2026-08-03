@@ -56,3 +56,44 @@ export const registerUser = async (req, res) => {
     });
   }
 };
+/**
+ * 
+ * @param {liste users} req 
+ * @param {*} res 
+ */
+export const getAllUsers=async(req,res)=>{
+  try{
+    const users=await prisma.user.findMany();
+    res.status(200).json({
+      success:true,
+      data:users,
+    });
+  }catch(error){
+    res.status(500).json({
+      success:false,
+      message:error.message,
+    })
+  }
+}
+//SUPRIMER USER
+export const deleteUser=async(req,res)=>{
+  try{
+    const{id}=req.params
+  const remove= await prisma.user.delete({
+    where:{
+      id:Number(id)
+    }
+  })
+  if(!user){
+    throw new Error("utilisateur non trouver")
+  }
+   res.status(200).json({
+      success:true,
+    message:"utilisateur supprimer"})
+}catch(error){
+   res.status(500).json({
+      success:false,
+      message:error.message,
+    })
+}
+}
