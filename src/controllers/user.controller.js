@@ -174,3 +174,79 @@ if(!existingUser){
     }
 };
  
+//afficher les info sur l'utilisateur 
+export const getUserById = async (req, res) => {
+  try {
+    const userId = req.params.id;
+
+    //requete prisma pour récupérer l'utilisateur
+    const user = await prisma.user.findUnique({
+      where: {id: userId},
+
+      //on inclut les détails du role et du client
+      include: {
+        role:{
+          select:{
+            name:true,
+            description:true
+
+          }
+        },
+        center:{
+          select:{
+            name:true,
+            type:true,
+          }
+        }
+
+      }
+    });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+    delete user.password;
+    return res.status(200).json({ status: "success", data: user });
+  } catch (error) {
+    console.error("Erreur Prisma lors de la récupération de l'utilisateur :", error);
+    return res.status(500).json({ message: "Une erreur interne du serveur est survenue." });
+  }
+}
+// afficher les informations de l'utilisateur 
+export const getUserInfo = async (req, res) => {
+  try {
+    const userId = req.user.id; // On suppose que l'ID de l'utilisateur est stocké dans req.user après l'authentification")
+ 
+    //prisma pour recuperer le user
+    const user = await prisma.user.findUnique({
+      where: {id: userId},
+      include: {
+        role:{
+          select:{
+            name: true,
+            description: true
+          }
+        },
+        center: {
+          select:{
+            name: true,
+            type: true
+          }
+        }
+      }
+    });
+    //verify user exists
+    if (!user) {
+      return res.status(404).json({message: "Utilisateur introuvable"});
+    }
+     delete user.password;
+
+     return res.status(200);json({
+      status: "success",
+      data: user
+     });
+  } catch (error){
+    console.error("Error lors de la récupération de l'utilisateur :",error );
+    return res.status(500).json({message:"Une erreur de serveyr est survenue."});
+    
+  }
+}

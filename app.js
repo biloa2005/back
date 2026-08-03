@@ -4,7 +4,35 @@ import userRoutes from './src/routes/user.routes.js'
 import centerRoutes from './src/routes/center.routes.js'
 import cors from 'cors'
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 const app = express()
+// Configuration de base de Swagger
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'API de Gestion des Anniversaires',
+      version: '1.0.0',
+      description: 'Documentation de mon API Express avec Prisma',
+    },
+    servers: [
+      {
+        url: 'http://localhost:4000',
+        description: 'Serveur Local',
+      },
+    ],
+  },
+  // Chemin vers les fichiers contenant les commentaires Swagger (vos fichiers de routes)
+  apis: ['./src/routes/*.js'], 
+};
+
+const swaggerDocs = swaggerJsdoc(swaggerOptions);
+
+// Route pour afficher l'interface Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users',userRoutes);
